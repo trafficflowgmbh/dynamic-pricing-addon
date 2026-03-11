@@ -1,0 +1,100 @@
+#product_total_price .trafficflow-price .woocommerce-Price-amount {
+	color: #1f6280;
+	font-size: 20px;
+	font-weight: 600;
+}
+
+#product_total_price .trafficflow-original .woocommerce-Price-amount {
+	color: #808080;
+	text-decoration: line-through;
+}
+
+#product_total_price .trafficflow-savings {
+	border-radius: 4px;
+	padding: 5px;
+	font-size: 14px;
+	font-weight: 400;
+	color: #ffffff;
+	background-color: #b23e2d;
+	margin-left: 10px;
+}
+
+#product_total_price .trafficflow-savings .woocommerce-Price-amount {
+	color: #ffffff;
+	font-size: 14px;
+}
+
+body.woocommerce-shop .trafficflow-savings .woocommerce-Price-amount,
+body.woocommerce-archive .trafficflow-savings .woocommerce-Price-amount {
+	color: #ffffff;
+	margin-left: 5px;
+}
+
+body.woocommerce-shop .final-price .woocommerce-Price-amount,
+body.woocommerce-archive .final-price .woocommerce-Price-amount {
+	font-size: 15px;
+	color: #1f6280;
+}
+
+body.woocommerce-shop .original-price .woocommerce-Price-amount,
+body.woocommerce-archive .original-price .woocommerce-Price-amount {
+	font-size: 12px;
+	margin-left: 5px;
+	text-decoration: line-through;
+}
+
+body.woocommerce.woocommerce-shop span.onsale,
+body.woocommerce.woocommerce-archive span.onsale {
+	background-color: #b23e2d;
+	border-radius: 4px;
+	padding: 5px;
+	font-size: 14px;
+	font-weight: 400;
+	color: #ffffff;
+}
+
+body.woocommerce.woocommerce-shop span.out-of-stock-badge,
+body.woocommerce.woocommerce-archive span.out-of-stock-badge {
+	background-color: #24292e;
+	border-radius: 4px;
+	padding: 5px;
+	font-size: 14px;
+	font-weight: 400;
+	color: #ffffff;
+}
+
+body.woocommerce.woocommerce-shop figure span.out-of-stock-badge,
+body.woocommerce.woocommerce-archive figure span.out-of-stock-badge {
+	display: none;
+}
+
+body.woocommerce.woocommerce-shop span.onsale:before,
+body.woocommerce.woocommerce-archive span.onsale:before {
+	background: unset;
+}
+
+body.woocommerce.woocommerce-shop .price-cart-wrapper .price,
+body.woocommerce.woocommerce-archive .price-cart-wrapper .price {
+	display: flex;
+	flex-direction: column;
+	padding-right: 15px;
+}
+
+body.woocommerce.woocommerce-shop span.trafficflow-savings-badge,
+body.woocommerce.woocommerce-archive span.trafficflow-savings-badge {
+	position: absolute;
+	top: 15px;
+	left: 15px;
+	z-index: 1000;
+}
+
+body.woocommerce.woocommerce-shop
+	span.trafficflow-savings-badge
+	.woocommerce-Price-amount,
+body.woocommerce.woocommerce-archive
+	span.trafficflow-savings-badge
+	.woocommerce-Price-amount {
+	font-size: 14px;
+	color: #ffffff;
+	margin-left: 5px;
+}

@@ -1,0 +1,33 @@
+{
+	"name": "trafficflow/trafficflow-dynamic-pricing-addon",
+	"description": "Enables stores to offer role-based discounts when using the Dynamic Pricing for WooCommerce extension.",
+	"license": "GPL-2.0-or-later",
+	"keywords": [
+		"WordPress",
+		"Plugin",
+		"TrafficFlow",
+		"Dynamic Pricing"
+	],
+	"devDependencies": {
+		"@wordpress/prettier-config": "4.27.0",
+		"@wordpress/stylelint-config": "23.19.0",
+		"eslint": "9.32.0",
+		"npm-run-all": "^4.1.5",
+		"prettier": "npm:wp-prettier@3.0.3",
+		"rtlcss": "4.3.0",
+		"sass": "1.89.0",
+		"stylelint": "16.23.0"
+	},
+	"scripts": {
+		"build": "sass --style=compressed assets/scss:assets/css && npm run build-rtl",
+		"build-rtl": "rtlcss assets/css/style.css assets/css/style-rtl.css",
+		"phpcbf": "composer run phpcbf",
+		"phpcs": "composer run phpcs",
+		"phpcs:summary": "composer run phpcs -- --report=summary",
+		"phplint": "composer run phplint",
+		"stylelint": "stylelint 'assets/css/**/*.css'",
+		"test": "npm-run-all --parallel phpcs phplint",
+		"watch": "sass --style=compressed assets/scss:assets/css --watch"
+	},
+	"packageManager": "pnpm@10.18.1+sha512.77a884a165cbba2d8d1c19e3b4880eee6d2fcabd0d879121e282196b80042351d5eb3ca0935fa599da1dc51265cc68816ad2bddd2a2de5ea9fdf92adbec7cd34"
+}

@@ -1,0 +1,9 @@
+/* Hide the discount value input field by default */
+#dynamic_pricing_data .section.discount-value-controls {
+	display: none;
+}
+
+/* Set the width of the discount value input field */
+#dynamic_pricing_data .section.discount-value-controls input {
+	width: 250px;
+}

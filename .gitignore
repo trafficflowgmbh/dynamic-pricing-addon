@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+vendor/
+
+# IDE and Editor files
+.idea/*
+.DS_Store
+
+# Cache files
+**/.cache/
+*.cache
+.phpcs.cache
+
+# Testing and Reports
+/test-results/
+/playwright-report/
+
+
+

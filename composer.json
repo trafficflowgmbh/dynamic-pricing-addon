@@ -1,0 +1,37 @@
+{
+	"name": "trafficflow/trafficflow-dynamic-pricing-addon",
+	"description": "Enables stores to offer role-based discounts when using the Dynamic Pricing for WooCommerce extension.",
+	"type": "wordpress-plugin",
+	"keywords": [
+		"WordPress",
+		"Plugin",
+		"TrafficFlow",
+		"Dynamic Pricing"
+	],
+	"license": "GPL-2.0-or-later",
+	"authors": [
+		{
+			"name": "TrafficFlow GmbH",
+			"email": "hello@trafficflow.ch"
+		}
+	],
+	"require-dev": {
+		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+		"phpcompatibility/phpcompatibility-wp": "^2.1.4",
+		"squizlabs/php_codesniffer": "^3.8",
+		"wp-coding-standards/wpcs": "^3.0",
+		"overtrue/phplint": "^1.2",
+		"phpcsstandards/phpcsutils": "^1.0",
+		"humanmade/psalm-plugin-wordpress": "^2.2"
+	},
+	"scripts": {
+		"phpcbf": "phpcbf --standard=phpcs.xml .",
+		"phpcs": "phpcs --standard=phpcs.xml .",
+		"phplint": "phplint"
+	},
+	"config": {
+		"allow-plugins": {
+			"dealerdirect/phpcodesniffer-composer-installer": true
+		}
+	}
+}
