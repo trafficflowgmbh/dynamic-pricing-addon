@@ -4,9 +4,9 @@ Add-on for WooCommerce that enables **role-based discounts** when using the [Dyn
 
 ## Requirements
 
-- WordPress 6.5+
-- WooCommerce 8.0+
-- Dynamic Pricing for WooCommerce (`woocommerce-dynamic-pricing`)
+- [WooCommerce](https://wordpress.org/plugins/woocommerce/)
+- [Dynamic Pricing for WooCommerce](https://woocommerce.com/products/dynamic-pricing/)
+- [Blocksy](https://creativethemes.com/blocksy/)
 
 ## Features
 
@@ -27,4 +27,4 @@ Add-on for WooCommerce that enables **role-based discounts** when using the [Dyn
 
 ## License
 
-GPL-2.0+
+This plugin is licensed under the [GNU General Public License v2.0](https://www.gnu.org/licenses/old-licenses/gpl-2.0.en.html).
