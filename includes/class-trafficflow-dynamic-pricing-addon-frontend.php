@@ -49,6 +49,9 @@ class TrafficFlow_Dynamic_Pricing_Addon_Frontend {
 		add_action( 'woocommerce_after_calculate_totals', array( $this, 'tfdpa_recalculate_cart_totals' ), 999 );
 		add_filter( 'woocommerce_cart_get_total', array( $this, 'tfdpa_filter_cart_total' ), 999, 1 );
 
+		// Filter Aktion/sales product list to only include products with an actual discount.
+		add_filter( 'kn_product_has_discount', array( $this, 'tfdpa_filter_kn_product_has_discount' ), 10, 4 );
+
 		// Remove the total product price hook from the blocksy theme.
 		add_action(
 			'init',
@@ -722,6 +725,47 @@ class TrafficFlow_Dynamic_Pricing_Addon_Frontend {
 
 		// Return both prices when there's a discount
 		return '<span class="original-price">' . wc_price( $original_price ) . '</span><span class="final-price">' . wc_price( $role_based_price ) . '</span>' . $badge;
+	}
+
+	/**
+	 * Filter for kn_product_has_discount: only include products that actually have a discount for the current user.
+	 *
+	 * @param bool   $default    Default value (true = include).
+	 * @param int    $product_id Product post ID.
+	 * @param string $role       User role (unused; addon uses current user context).
+	 * @param string $zone       Zone code (unused; addon uses current context).
+	 * @return bool True if product has a discount, false to exclude from Aktion filter.
+	 */
+	public function tfdpa_filter_kn_product_has_discount( bool $default, int $product_id, string $role, string $zone ): bool {
+		$product = wc_get_product( $product_id );
+		if ( ! $product ) {
+			return $default;
+		}
+		if ( $product->is_type( 'variable' ) ) {
+			$variations = $product->get_available_variations();
+			foreach ( $variations as $variation_data ) {
+				$variation = wc_get_product( $variation_data['variation_id'] ?? 0 );
+				if ( $variation && $this->tfdpa_product_has_discount_for_user( $variation ) ) {
+					return true;
+				}
+			}
+			return false;
+		}
+		return $this->tfdpa_product_has_discount_for_user( $product );
+	}
+
+	/**
+	 * Check if a product/variation has a discount for the current user (final < base at qty 1).
+	 *
+	 * @param \WC_Product|\WC_Product_Variation $product Product or variation.
+	 * @return bool
+	 */
+	private function tfdpa_product_has_discount_for_user( $product ): bool {
+		$candidate = $this->tfdpa_get_best_role_scoped_candidate( $product, 1 );
+		if ( ! $candidate || ! isset( $candidate['base'], $candidate['final'] ) ) {
+			return false;
+		}
+		return (float) $candidate['final'] < (float) $candidate['base'];
 	}
 
 	/**
@@ -1519,7 +1563,9 @@ class TrafficFlow_Dynamic_Pricing_Addon_Frontend {
 	 * @return string|null The set ID or null if not found.
 	 */
 	private function find_dynamic_pricing_set_for_variation( int $variation_id, int $product_id ): ?string {
-		$pricing_rules = get_post_meta( $product_id, '_pricing_rules', true );
+		$base_parent_id    = $this->tfdpa_get_base_lang_post_id( $product_id );
+		$base_variation_id = $this->tfdpa_get_base_lang_post_id( $variation_id );
+		$pricing_rules     = get_post_meta( $base_parent_id, '_pricing_rules', true );
 		if ( ! $pricing_rules ) {
 			return null;
 		}
@@ -1528,7 +1574,7 @@ class TrafficFlow_Dynamic_Pricing_Addon_Frontend {
 		foreach ( $pricing_rules as $set_id => $rule_data ) {
 			if (
 				isset( $rule_data['variation_rules']['args']['variations'] ) &&
-				in_array( (string) $variation_id, $rule_data['variation_rules']['args']['variations'], true )
+				in_array( (string) $base_variation_id, $rule_data['variation_rules']['args']['variations'], true )
 			) {
 				$found_sets[] = $set_id;
 			}
@@ -1550,8 +1596,9 @@ class TrafficFlow_Dynamic_Pricing_Addon_Frontend {
 			return null;
 		}
 
-		$meta_key      = '_trafficflow_role_discounts_set_' . $set_id;
-		$discount_data = get_post_meta( $product_id, $meta_key, true );
+		$lookup_product_id = $this->tfdpa_get_base_lang_post_id( $product_id );
+		$meta_key          = '_trafficflow_role_discounts_set_' . $set_id;
+		$discount_data     = get_post_meta( $lookup_product_id, $meta_key, true );
 
 		if ( $discount_data ) {
 			$result = is_string( $discount_data ) ? json_decode( $discount_data, true ) : $discount_data;
@@ -1560,10 +1607,11 @@ class TrafficFlow_Dynamic_Pricing_Addon_Frontend {
 			}
 		}
 
-		$product = wc_get_product( $product_id );
+		$product       = wc_get_product( $product_id );
+		$base_parent_id = ( $product && $product->get_type() === 'variation' ) ? $this->tfdpa_get_base_lang_post_id( $product->get_parent_id() ) : $lookup_product_id;
+
 		if ( $product && $product->get_type() === 'variation' ) {
-			$parent_id       = $product->get_parent_id();
-			$parent_discount = get_post_meta( $parent_id, $meta_key, true );
+			$parent_discount = get_post_meta( $base_parent_id, $meta_key, true );
 
 			if ( $parent_discount ) {
 				$result = is_string( $parent_discount ) ? json_decode( $parent_discount, true ) : $parent_discount;
@@ -1581,7 +1629,7 @@ class TrafficFlow_Dynamic_Pricing_Addon_Frontend {
 		);
 
 		foreach ( $alternative_keys as $alt_key ) {
-			$alt_data = get_post_meta( $product_id, $alt_key, true );
+			$alt_data = get_post_meta( $lookup_product_id, $alt_key, true );
 
 			if ( $alt_data ) {
 				$result = is_string( $alt_data ) ? json_decode( $alt_data, true ) : $alt_data;
@@ -1591,7 +1639,7 @@ class TrafficFlow_Dynamic_Pricing_Addon_Frontend {
 			}
 
 			if ( $product && $product->get_type() === 'variation' ) {
-				$parent_alt_data = get_post_meta( $product->get_parent_id(), $alt_key, true );
+				$parent_alt_data = get_post_meta( $base_parent_id, $alt_key, true );
 
 				if ( $parent_alt_data ) {
 					$result = is_string( $parent_alt_data ) ? json_decode( $parent_alt_data, true ) : $parent_alt_data;
@@ -1602,7 +1650,7 @@ class TrafficFlow_Dynamic_Pricing_Addon_Frontend {
 			}
 		}
 
-		$search_product_id = ( $product && $product->get_type() === 'variation' ) ? $product->get_parent_id() : $product_id;
+		$search_product_id = ( $product && $product->get_type() === 'variation' ) ? $base_parent_id : $lookup_product_id;
 		$all_meta          = get_post_meta( $search_product_id );
 
 		foreach ( $all_meta as $key => $value ) {

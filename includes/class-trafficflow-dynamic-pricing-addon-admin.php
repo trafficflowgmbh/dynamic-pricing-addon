@@ -29,6 +29,7 @@ class TrafficFlow_Dynamic_Pricing_Addon_Admin {
 		add_action( 'admin_enqueue_scripts', array( $this, 'tfdpa_enqueue_admin_scripts' ) );
 		add_action( 'woocommerce_process_product_meta', array( $this, 'tfdpa_save_product_role_discounts' ) );
 		add_action( 'woocommerce_product_options_pricing', array( $this, 'tfdpa_load_product_role_discounts' ) );
+		add_action( 'woocommerce_product_data_panels', array( $this, 'tfdpa_load_product_role_discounts' ), 999 );
 	}
 
 	/**
@@ -38,6 +39,11 @@ class TrafficFlow_Dynamic_Pricing_Addon_Admin {
 	 * @return void
 	 */
 	public function tfdpa_enqueue_admin_scripts() {
+		$screen = get_current_screen();
+		if ( ! $screen || 'product' !== $screen->post_type ) {
+			return;
+		}
+
 		// Enqueue admin scripts.
 		wp_enqueue_script(
 			'tfdpa-admin-script',
@@ -73,6 +79,7 @@ class TrafficFlow_Dynamic_Pricing_Addon_Admin {
 
 	/**
 	 * Save role-based discount data when product is saved.
+	 * Saves to the base language product so discounts stay synced across all translations.
 	 *
 	 * @since 1.0.0
 	 * @param int $post_id The product post ID.
@@ -89,6 +96,10 @@ class TrafficFlow_Dynamic_Pricing_Addon_Admin {
 			return;
 		}
 
+		// Save to base language product so all translations stay in sync.
+		$base_lang  = function_exists( 'theme_default_language' ) ? theme_default_language() : 'de';
+		$save_to_id = $this->tfdpa_get_base_lang_post_id( $post_id, $base_lang );
+
 		// Process discount type data.
 		if ( isset( $_POST['trafficflow_discount_type'] ) && is_array( $_POST['trafficflow_discount_type'] ) ) {
 			$discount_types  = array_map( 'sanitize_text_field', wp_unslash( $_POST['trafficflow_discount_type'] ) );
@@ -101,7 +112,7 @@ class TrafficFlow_Dynamic_Pricing_Addon_Admin {
 
 				// If discount type is 'none', remove the meta data.
 				if ( 'none' === $discount_type ) {
-					delete_post_meta( $post_id, $meta_key );
+					delete_post_meta( $save_to_id, $meta_key );
 					continue;
 				}
 
@@ -126,12 +137,31 @@ class TrafficFlow_Dynamic_Pricing_Addon_Admin {
 
 				// Only save if we have a valid discount value.
 				if ( $discount_data['discount_value'] > 0 ) {
-					update_post_meta( $post_id, $meta_key, wp_json_encode( $discount_data ) );
+					update_post_meta( $save_to_id, $meta_key, wp_json_encode( $discount_data ) );
 				} else {
-					delete_post_meta( $post_id, $meta_key );
+					delete_post_meta( $save_to_id, $meta_key );
 				}
 			}
 		}
+	}
+
+	/**
+	 * Get the base language post ID for multilingual sync (Polylang).
+	 *
+	 * @since 1.0.0
+	 * @param int    $post_id   The post ID.
+	 * @param string $base_lang Base language code (default 'de').
+	 * @return int The base language post ID.
+	 */
+	private function tfdpa_get_base_lang_post_id( int $post_id, string $base_lang = 'de' ): int {
+		if ( $post_id <= 0 ) {
+			return $post_id;
+		}
+		if ( function_exists( 'pll_get_post' ) ) {
+			$base_id = pll_get_post( $post_id, $base_lang );
+			return ( $base_id && $base_id > 0 ) ? (int) $base_id : $post_id;
+		}
+		return $post_id;
 	}
 
 	/**
@@ -147,12 +177,20 @@ class TrafficFlow_Dynamic_Pricing_Addon_Admin {
 			return;
 		}
 
-		// Get all role discount meta for this product.
-		$meta_keys      = get_post_meta( $post->ID );
+		// Avoid adding inline script twice (we hook to both pricing and data panels).
+		static $loaded = false;
+		if ( $loaded ) {
+			return;
+		}
+
+		// Load discount meta from base language product so translations display the same values.
+		$base_lang = function_exists( 'theme_default_language' ) ? theme_default_language() : 'de';
+		$load_from_id = $this->tfdpa_get_base_lang_post_id( (int) $post->ID, $base_lang );
+		$meta_keys    = get_post_meta( $load_from_id );
 		$role_discounts = array();
 
 		foreach ( $meta_keys as $meta_key => $meta_values ) {
-			if ( strpos( $meta_key, '_trafficflow_role_discounts_' ) === 0 ) {
+			if ( strpos( $meta_key, '_trafficflow_role_discounts_' ) === 0 && isset( $meta_values[0] ) ) {
 				$pricing_group_uid = str_replace( '_trafficflow_role_discounts_', '', $meta_key );
 				$discount_data     = json_decode( $meta_values[0], true );
 
@@ -162,14 +200,13 @@ class TrafficFlow_Dynamic_Pricing_Addon_Admin {
 			}
 		}
 
-		// Output data for JavaScript.
-		if ( ! empty( $role_discounts ) ) {
-			wp_add_inline_script(
-				'tfdpa-admin-script',
-				'window.tfdpaExistingDiscounts = ' . wp_json_encode( $role_discounts ) . ';',
-				'before'
-			);
-		}
+		// Always output so admin.js can read it (empty object when no discounts).
+		$loaded = true;
+		wp_add_inline_script(
+			'tfdpa-admin-script',
+			'window.tfdpaExistingDiscounts = ' . wp_json_encode( $role_discounts ) . ';',
+			'before'
+		);
 	}
 }
 
